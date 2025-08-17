@@ -1,111 +1,180 @@
-const pizzaData = [
-  {
-    name: "Focaccia",
-    ingredients: "Bread with italian olive oil and rosemary",
-    price: 6,
-    photoName: "pizzas/focaccia.jpg",
-    soldOut: false,
-  },
-  {
-    name: "Pizza Margherita",
-    ingredients: "Tomato and mozarella",
-    price: 10,
-    photoName: "pizzas/margherita.jpg",
-    soldOut: false,
-  },
-  {
-    name: "Pizza Spinaci",
-    ingredients: "Tomato, mozarella, spinach, and ricotta cheese",
-    price: 12,
-    photoName: "pizzas/spinaci.jpg",
-    soldOut: false,
-  },
-  {
-    name: "Pizza Funghi",
-    ingredients: "Tomato, mozarella, mushrooms, and onion",
-    price: 12,
-    photoName: "pizzas/funghi.jpg",
-    soldOut: false,
-  },
-  {
-    name: "Pizza Salamino",
-    ingredients: "Tomato, mozarella, and pepperoni",
-    price: 15,
-    photoName: "pizzas/salamino.jpg",
-    soldOut: true,
-  },
-  {
-    name: "Pizza Prosciutto",
-    ingredients: "Tomato, mozarella, ham, aragula, and burrata cheese",
-    price: 18,
-    photoName: "pizzas/prosciutto.jpg",
-    soldOut: false,
-  },
-];
+import { useState } from "react";
 
 export default function App() {
+  const [addFriendEnabled, setAddFriendEnabled] = useState(false);
+  const [friendList, setFriendList] = useState([
+    {
+      id: 118836,
+      name: "Clark",
+      image: "https://i.pravatar.cc/48?u=118836",
+      balance: 0,
+    },
+    {
+      id: 933372,
+      name: "Sarah",
+      image: "https://i.pravatar.cc/48?u=933372",
+      balance: 0,
+    },
+    {
+      id: 499476,
+      name: "Anthony",
+      image: "https://i.pravatar.cc/48?u=499476",
+      balance: 0,
+    },
+  ]);
+  const [selectedFriend, setSelectedFriend] = useState({});
+  function addSelectedFriend(friend) {
+    setSelectedFriend(() => friend);
+  }
+  function addToFriendList(friend) {
+    setFriendList((friends) => [...friends, friend]);
+  }
+  function handleAddFriend() {
+    setAddFriendEnabled((a) => (a = !a));
+  }
+  function editBalance(friendID, addedBalance) {
+    setFriendList((friends) =>
+      friends.map((friend) =>
+        friend.id === friendID
+          ? { ...friend, balance: friend.balance + addedBalance }
+          : friend
+      )
+    );
+    console.log(friendList);
+  }
   return (
-    <div className="container">
-      <Header />
-      <Menu />
-      <Footer />
+    <div className="app">
+      <div className="sidebar">
+        <FriendList
+          friends={friendList}
+          onSelectingFriend={addSelectedFriend}
+        />
+        {addFriendEnabled && <FormAddFriend onAddingFriend={addToFriendList} />}
+        <Button onClick={handleAddFriend}>
+          {addFriendEnabled ? "Close" : "Add Friend"}
+        </Button>
+      </div>
+      <FormSplitBill
+        selectedFriend={selectedFriend}
+        editBalance={editBalance}
+      />
     </div>
   );
 }
-function Pizza({ pizzaObj }) {
+function FriendList({ friends, onSelectingFriend }) {
   return (
-    <li className={`pizza ${pizzaObj.soldOut ? "sold-out" : ""}`}>
-      <img src={pizzaObj.photoName} alt="Pizza's Image" />
-      <div>
-        <h3>{pizzaObj.name}</h3>
-        <p>{pizzaObj.ingredients}</p>
-        <span>{pizzaObj.soldOut ? "SOLDOUT" : pizzaObj.price}</span>
-      </div>
+    <ul>
+      {friends.map((f) => (
+        <Friend friend={f} key={f.id} onSelectingFriend={onSelectingFriend} />
+      ))}
+    </ul>
+  );
+}
+function Friend({ friend, onSelectingFriend }) {
+  const [isSelected, SetIsSelected] = useState(false);
+  function handleSelect() {
+    SetIsSelected((is) => !is);
+    if (isSelected) onSelectingFriend({});
+    else onSelectingFriend(friend);
+  }
+  return (
+    <li>
+      <img src={friend.image} alt="Friend's Image" />
+      <h3>{friend.name}</h3>
+      {friend.balance < 0 && (
+        <p className="red">
+          You owe {friend.name} {Math.abs(friend.balance)} $
+        </p>
+      )}
+      {friend.balance > 0 && (
+        <p className="green">
+          {friend.name} owes you {Math.abs(friend.balance)} $
+        </p>
+      )}
+      {friend.balance === 0 && <p> You and {friend.name} are even</p>}
+      <Button onClick={handleSelect}>{isSelected ? "Close" : "Select"}</Button>
     </li>
   );
 }
-function Header() {
+function Button({ onClick, children }) {
   return (
-    <header className="header">
-      <h1>Fast React Pizza Co.</h1>;
-    </header>
-  );
-}
-function Menu() {
-  return (
-    <main className="menu">
-      <h2>Our Menu</h2>
-      {pizzaData.length > 0 ? (
-        <ul className="pizzas">
-          {pizzaData.map((p) => (
-            <Pizza pizzaObj={p} key={p.name} />
-          ))}
-        </ul>
-      ) : (
-        <p> We Still Working On Our Menu. Please Come Back Later </p>
-      )}
-    </main>
-  );
-}
-function Footer() {
-  const closeHour = 22;
-  const isOpen = new Date().getHours() >= 10 && new Date().getHours() <= 22;
-  return (
-    <footer className="footer">
-      {isOpen ? (
-        <Order closeHours={closeHour} />
-      ) : (
-        <p> We're Closed Now. Come Back Later</p>
-      )}
-    </footer>
-  );
-}
-function Order({ closeHour }) {
-  return (
-    <div className="order">
+    <button onClick={onClick} className="button">
       {" "}
-      <p>We're Oppen Until {closeHour}. Come Visit Us or Order Online</p>
-      <button className="btn">Order</button>
-    </div>
+      {children}{" "}
+    </button>
+  );
+}
+function FormAddFriend({ onAddingFriend }) {
+  const [name, setName] = useState("");
+  const [image, setImage] = useState("");
+  function AddingFriend(e) {
+    e.preventDefault();
+    const newFriend = { name, image, id: Date.now(), balance: 0 };
+    onAddingFriend(newFriend);
+    setImage("");
+    setName("");
+  }
+  return (
+    <form className="form-add-friend" onSubmit={AddingFriend}>
+      <label>👯Name</label>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <label>📷Image URL</label>
+      <input
+        type="text"
+        value={image}
+        onChange={(e) => setImage(e.target.value)}
+      />
+      <Button> Add </Button>
+    </form>
+  );
+}
+function FormSplitBill({ selectedFriend, editBalance }) {
+  const [billValue, setBillValue] = useState(0);
+  const [myExpense, setMyExpense] = useState(0);
+  const [whoIsPaying, setWhoIsPaying] = useState("user");
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (whoIsPaying === "user")
+      editBalance(selectedFriend.id, billValue - myExpense);
+    else editBalance(selectedFriend.id, myExpense - billValue);
+    setBillValue(0);
+    setMyExpense(0);
+    setWhoIsPaying("user");
+  }
+  return (
+    <form className="form-split-bill" onSubmit={(e) => handleSubmit(e)}>
+      <h2>SPlit a bill with {selectedFriend.name}</h2>
+      <label>🤑 Bill Value</label>
+      <input
+        type="number"
+        value={billValue}
+        onChange={(e) => setBillValue(Number(e.target.value))}
+      />
+
+      <label>🤑 Your Expense</label>
+      <input
+        type="number"
+        value={myExpense}
+        onChange={(e) => setMyExpense(Number(e.target.value))}
+      />
+
+      <label>🤑 {selectedFriend.name}'s Expense</label>
+      <input type="number" value={Math.abs(myExpense - billValue)} disabled />
+      <label>🤑 Who Is Paying the Bill</label>
+      <select
+        value={whoIsPaying}
+        onChange={(e) => setWhoIsPaying(e.target.value)}
+      >
+        <option value="user">You</option>
+        {selectedFriend && (
+          <option value="friend">{selectedFriend.name}</option>
+        )}
+      </select>
+      <Button> Split Bill </Button>
+    </form>
   );
 }
